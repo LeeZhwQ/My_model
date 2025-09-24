@@ -5,7 +5,7 @@ import math
 
 #Hyperparameters
 d_model = 512
-context_length = 32
+context_length = 128
 num_heads = 8
 head_size = d_model // num_heads
 device = 'cuda' if torch.cuda.is_available() else "cpu"
@@ -90,7 +90,7 @@ class Model(nn.Module):
         B,T = x_batch.shape
         pe_lookup_tabel = torch.zeros(context_length,d_model,device=device) # context * d_model
         position = torch.arange(0,context_length,dtype= torch.float).unsqueeze(1)
-        div_term = torch.exp(- torch.log(10000.0) * torch.arange(0,d_model,2).float / d_model)
+        div_term = torch.exp(-torch.log(torch.tensor(10000.0)) * torch.arange(0,d_model,2).float() / d_model)
         pe_lookup_tabel[: , 0 :: 2] = torch.sin(position * div_term)
         pe_lookup_tabel[:,1::2] = torch.cos(position * div_term)
         
@@ -110,18 +110,20 @@ class Model(nn.Module):
         
         return logits,loss
     
-    def generate(self,x_batch,max_new_tokens=100,temerature=1.0):
+    def generate(self,x_batch,max_new_tokens=100,temperature=0.7,top_k = None):
         for _ in range(max_new_tokens):
             #x_batch: batchsize * context_length
             x_crop = x_batch[:,-context_length:]
             logits,loss = self.forward(x_crop) #logits [batch,T,vocab_size]
-            logits = logits[:,-1,:] / temerature
+            logits = logits[:,-1,:] / temperature
+            if top_k is not None:
+                v, _ = torch.topk(logits, top_k)
+                logits[logits < v[:, [-1]]] = -float('inf')
             probability = F.softmax(logits,dim=-1)
             predicted = torch.multinomial(probability,num_samples=1) #是一个索引值
             x_batch = torch.cat((x_batch,predicted),dim=1)
         
         return x_batch
-        
         
         
         
