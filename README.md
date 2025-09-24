@@ -2,7 +2,7 @@
 transformer 
 
 
-training steps: 1011000
+training steps: 1000000
 
 
 
