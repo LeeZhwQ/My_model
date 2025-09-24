@@ -2,6 +2,8 @@
 transformer 
 
 
+使用训练数据：酒店评论
+
 training steps: 10000
 
 
